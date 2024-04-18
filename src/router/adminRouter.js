@@ -3,12 +3,10 @@ const middleWare = require('../middleware/middleware');
 
 const router = require('express').Router();
 
-router.post('/create-admin',controller.createAdmin);
+router.post('/create-admin',controller.createSuperAdmin);
 
-router.post('/admin-login',controller.adminLogin);
+router.post('/admin-login',controller.superAdminLogin);
 
-router.post('/create-user',middleWare.adminMiddleWare,controller.createStaff);
-
-
+router.post('/create-role/:_id',middleWare.superAdminMiddleWare,controller.createRole);
 
 module.exports = router;

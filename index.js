@@ -7,6 +7,9 @@ const connectToMongoDB = require("./config/db");
 const path = require("path");
 const rfs = require("rotating-file-stream");
 const { format } = require("date-fns");
+const session = require("express-session");
+const passport = require("passport");
+const OAuth2Strategy = require("passport-google-oauth2").Strategy;
 
 // Load environment variables
 dotenv.config();
@@ -17,6 +20,8 @@ connectToMongoDB();
 // Middleware setup
 app.use(express.json());
 app.use(cors());
+
+
 
 // Morgan setup for logging
 const logDirectory = path.join(__dirname, "log");
@@ -45,7 +50,69 @@ app.use(
   )
 );
 
-// Routes setup
 require("./src/router/baseRouter")(app);
+
+// ! GOOGLE AUTH SNIPETS
+
+const clientid = "1062156057892-oqukd3of5sdc2vmdb0solhomfu3regdm.apps.googleusercontent.com"
+const clientsecret = "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"
+
+passport.use(
+  new OAuth2Strategy({
+      clientID: clientid,
+      clientSecret: clientsecret,
+      callbackURL: "/auth/google/callback",
+      scope: ["profile", "email"]
+  },
+  async (accessToken, refreshToken, profile, done) => {
+      try {
+          // You can access the accessToken, refreshToken, and profile here
+          console.log("Access Token:", accessToken);
+          console.log("Refresh Token:", refreshToken);
+          console.log("Profile:", profile);
+
+          let user = await userdb.findOne({ googleId: profile.id });
+
+          if (!user) {
+              user = new userdb({
+                  googleId: profile.id,
+                  displayName: profile.displayName,
+                  email: profile.emails[0].value,
+                  image: profile.photos[0].value
+              });
+
+              await user.save();
+          }
+
+          return done(null, user);
+      } catch (error) {
+          return done(error, null);
+      }
+  })
+);
+
+
+passport.serializeUser((user,done)=>{
+  done(null,user);
+})
+
+passport.deserializeUser((user,done)=>{
+  done(null,user);
+});
+
+// initial google ouath login
+app.get("/auth/google",passport.authenticate("google",{scope:["profile","email"]}));
+
+app.get("/auth/google/callback",passport.authenticate("google",{
+  successRedirect:"http://localhost:5173",
+  failureRedirect:"http://localhost:5173/auth/signin"
+}))
+
+
+// Routes setup
+
+
+
+
 
 module.exports = app;

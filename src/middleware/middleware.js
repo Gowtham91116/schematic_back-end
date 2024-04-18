@@ -1,10 +1,9 @@
 const { TokenExpiredError } = require("jsonwebtoken");
 const library = require("../../services");
-const adminSchema = require("../model/adminModel");
-const userSchema = require('../model/userModel');
+const superAdminSchema = require("../model/superAdminModel");
 
 module.exports = {
-  adminMiddleWare: async (request, response, next) => {
+  superAdminMiddleWare: async (request, response, next) => {
     const authorisation = request.header("G.K-Auth_Token");
     if (!authorisation) {
       response.status(401).send("Unauthorized");
@@ -12,7 +11,7 @@ module.exports = {
       try {
         const verifyToken = await library.verifyToken(authorisation);
         console.log(verifyToken);
-        const verifyAdmin = await adminSchema.findOne({
+        const verifyAdmin = await superAdminSchema.findOne({
           designation: verifyToken.designation,
         });
         if (!verifyAdmin) {
