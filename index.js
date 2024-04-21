@@ -10,6 +10,8 @@ const { format } = require("date-fns");
 const session = require("express-session");
 const passport = require("passport");
 const OAuth2Strategy = require("passport-google-oauth2").Strategy;
+const superAdminSchema = require("./src/model/superAdminModel");
+const services = require("./services");
 
 // Load environment variables
 dotenv.config();
@@ -21,7 +23,18 @@ connectToMongoDB();
 app.use(express.json());
 app.use(cors());
 
+// setup session
+app.use(
+  session({
+    secret: "yy74y4r47yr474yr4y4",
+    resave: false,
+    saveUninitialized: true,
+  })
+);
 
+// setuppassport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Morgan setup for logging
 const logDirectory = path.join(__dirname, "log");
@@ -52,67 +65,109 @@ app.use(
 
 require("./src/router/baseRouter")(app);
 
+
+
+
+
+
 // ! GOOGLE AUTH SNIPETS
 
-const clientid = "1062156057892-oqukd3of5sdc2vmdb0solhomfu3regdm.apps.googleusercontent.com"
-const clientsecret = "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"
+let user;
+
+const clientid =
+  "1062156057892-oqukd3of5sdc2vmdb0solhomfu3regdm.apps.googleusercontent.com";
+const clientsecret = "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";
 
 passport.use(
-  new OAuth2Strategy({
+  new OAuth2Strategy(
+    {
       clientID: clientid,
       clientSecret: clientsecret,
       callbackURL: "/auth/google/callback",
-      scope: ["profile", "email"]
-  },
-  async (accessToken, refreshToken, profile, done) => {
+      scope: ["profile", "email"],
+    },
+    async (accessToken, refreshToken, profile, done) => {
       try {
-          // You can access the accessToken, refreshToken, and profile here
-          console.log("Access Token:", accessToken);
-          console.log("Refresh Token:", refreshToken);
-          console.log("Profile:", profile);
+        // You can access the accessToken, refreshToken, and profile here
+        console.log("Access Token:", accessToken);
+        console.log("Refresh Token:", refreshToken);
+        console.log("Profile:", profile);
+        const count = await superAdminSchema.countDocuments();
 
-          let user = await userdb.findOne({ googleId: profile.id });
+         user = await superAdminSchema.findOne({
+          googleId: profile.id
+        });
 
-          if (!user) {
-              user = new userdb({
-                  googleId: profile.id,
-                  displayName: profile.displayName,
-                  email: profile.emails[0].value,
-                  image: profile.photos[0].value
-              });
+        if (!user) {
+          user = new superAdminSchema({
+            googleId: profile.id,
+            username: profile.displayName,
+            email: profile.emails[0].value,
+            profilePic: profile.photos[0].value,
+          Super_Admin_id: `Super_admin_${count + 1}`,
+          });
 
-              await user.save();
-          }
+          await user.save();
+        }
 
-          return done(null, user);
+        return done(null, user);
       } catch (error) {
-          return done(error, null);
+        return done(error, null);
       }
-  })
+    }
+  )
 );
 
+// Middleware to attach user data to response object
+async function attachUserData(req, res, next) {
+  if (req.user) {
+    // If user is authenticated, attach user data to response locals
+    res.locals.user = req.user;
+  }
+  next();
+}
 
-passport.serializeUser((user,done)=>{
-  done(null,user);
-})
+// Attach middleware to every request
+app.use(attachUserData);
 
-passport.deserializeUser((user,done)=>{
-  done(null,user);
+// Route handler for the home page
+app.get("/", async(req, res) => {
+  // Check if user data is available in locals
+  console.log(user,'135')
+  if (user) {
+    // If user data is available, send it to the client
+    const token =  await services.createToken({user});
+    res.send({ user,token});
+  } else {
+    // If user data is not available, send a generic response
+    res.send("Welcome to the home page");
+  }
+});
+
+passport.serializeUser((user, done) => {
+  done(null, user);
+});
+
+passport.deserializeUser((user, done) => {
+  done(null, user);
 });
 
 // initial google ouath login
-app.get("/auth/google",passport.authenticate("google",{scope:["profile","email"]}));
+app.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
 
-app.get("/auth/google/callback",passport.authenticate("google",{
-  successRedirect:"http://localhost:5173",
-  failureRedirect:"http://localhost:5173/auth/signin"
-}))
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", {
+    successRedirect: "http://localhost:5173/super-admin/dashboard",
+    failureRedirect: "http://localhost:5173/auth/signin",
+  })
 
+  
+);
 
 // Routes setup
 
-
-
-
-
-module.exports = app;
+module.exports = { app };

@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const roleSchema = new mongoose.Schema({
   _id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "user",
+    ref: "super-admin",
     required: true,
   },
   isActive: {

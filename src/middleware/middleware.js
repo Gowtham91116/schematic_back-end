@@ -10,17 +10,19 @@ module.exports = {
     } else {
       try {
         const verifyToken = await library.verifyToken(authorisation);
-        console.log(verifyToken);
+      
         const verifyAdmin = await superAdminSchema.findOne({
-          designation: verifyToken.designation,
+          Super_Admin_id: verifyToken.Super_Admin_id,
+          isActive:true,
         });
+       
         if (!verifyAdmin) {
           response.status(404).send({
             message: "Unauthorized",
             status: false,
           });
         } else {
-          console.log(`${verifyAdmin.Admin_id} AUTHORISED AS AN ADMIN`);
+          console.log(`${verifyToken.Super_Admin_id} AUTHORISED AS AN ADMIN`);
           next();
         }
       } catch (error) {
