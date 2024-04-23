@@ -1,28 +1,31 @@
 const { TokenExpiredError } = require("jsonwebtoken");
 const library = require("../../services");
 const superAdminSchema = require("../model/superAdminModel");
+const { auth } = require("google-auth-library");
 
 module.exports = {
   superAdminMiddleWare: async (request, response, next) => {
     const authorisation = request.header("G.K-Auth_Token");
+    console.log(authorisation);
     if (!authorisation) {
       response.status(401).send("Unauthorized");
     } else {
       try {
         const verifyToken = await library.verifyToken(authorisation);
-      
+// console.log(verifyToken)
         const verifyAdmin = await superAdminSchema.findOne({
-          Super_Admin_id: verifyToken.Super_Admin_id,
-          isActive:true,
+          Super_Admin_id: verifyToken?.Super_Admin_id,
+          isActive:true
         });
-       
+        // console.log(verifyAdmin);
+      
         if (!verifyAdmin) {
           response.status(404).send({
             message: "Unauthorized",
             status: false,
           });
         } else {
-          console.log(`${verifyToken.Super_Admin_id} AUTHORISED AS AN ADMIN`);
+          console.log(`${verifyAdmin.Super_Admin_id} AUTHORISED AS AN ADMIN`);
           next();
         }
       } catch (error) {

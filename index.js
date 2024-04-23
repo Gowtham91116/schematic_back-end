@@ -88,10 +88,7 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        // You can access the accessToken, refreshToken, and profile here
-        console.log("Access Token:", accessToken);
-        console.log("Refresh Token:", refreshToken);
-        console.log("Profile:", profile);
+    
         const count = await superAdminSchema.countDocuments();
 
          user = await superAdminSchema.findOne({
@@ -133,10 +130,13 @@ app.use(attachUserData);
 // Route handler for the home page
 app.get("/", async(req, res) => {
   // Check if user data is available in locals
-  console.log(user,'135')
+
   if (user) {
+
+    const {_id,Super_Admin_id,email,designation} = user;
+
     // If user data is available, send it to the client
-    const token =  await services.createToken({user});
+    const token =  await services.createToken({_id:_id,Super_Admin_id:Super_Admin_id,email:email,designation:designation});
     res.send({ user,token});
   } else {
     // If user data is not available, send a generic response

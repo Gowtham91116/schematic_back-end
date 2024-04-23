@@ -1,15 +1,14 @@
 const mongoose = require("mongoose");
 
 const roleSchema = new mongoose.Schema({
-  _id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "super-admin",
+  superAdminId: {
+    type: String,
     required: true,
   },
   isActive: {
     type: Boolean,
     required: true,
-    default:true
+    default: true,
   },
   roleName: {
     type: String,
@@ -61,4 +60,4 @@ const roleSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model('role',roleSchema);
+module.exports = mongoose.model("roles", roleSchema);
