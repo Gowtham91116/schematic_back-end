@@ -24,7 +24,7 @@ const roleSchema = new mongoose.Schema({
         type: Boolean,
         default: false, // Set default value if needed
       },
-      read: {
+      approval: {
         type: Boolean,
         default: false, // Set default value if needed
       },
@@ -44,7 +44,7 @@ const roleSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
       },
-      read: {
+      approval: {
         type: Boolean,
         default: false,
       },

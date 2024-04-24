@@ -2,6 +2,7 @@ const services = require("../../services");
 const bcrypt = require("bcrypt");
 const superAdminSchema = require("../model/superAdminModel");
 const roleSchema = require("../model/roleModel");
+const userSchema = require("../model/usersModel");
 const mongoose = require("mongoose");
 const { verify } = require("jsonwebtoken");
 // const {OAuth2Client} = require('google-auth-library');
@@ -138,67 +139,166 @@ module.exports = {
       const authorisation = req.header("G.K-Auth_Token");
       const verifyToken = await services.verifyToken(authorisation);
       const { _id } = verifyToken;
-
-      const role = await roleSchema.find({superAdminId:_id});
-
-      if (!role || role.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "Super admin not found",
-          data: null,
+  console.log(_id);
+      const roles = await roleSchema.find({ superAdminId: _id, isActive: true });
+  console.log(roles,'143');
+      if (!roles || roles.length === 0) {
+        return res.status(404).send({
+            code: 404,
+            message: "Not Found",
+            description: "Roles not found for this super admin",
+            suggestedAction: "Ensure the super admin ID is correct or create roles for this super admin.",
+            data: null,
         });
       }
-
-      res.status(200).json({
-        success: true,
-        message: "Super admin with role fetched successfully",
-        data: role, // Return the first element of the array
+  
+      res.status(200).send({
+          code: 200,
+          message: "OK",
+          description: "Roles for super admin fetched successfully",
+          data: roles,
       });
     } catch (error) {
       console.error("Error in getting super admin with role:", error);
-      res.status(500).json({
-        success: false,
-        message: "Internal Server Error",
-        error: error.message,
-      });
+      res.status(500).send({
+          code: 500,
+          message: "Internal Server Error",
+          description: "An unexpected error occurred while processing the request",
+          error: error.message,
+          suggestedAction: "Contact the server administrator or try again later.",
+     });
     }
   },
+  
 
   getSingleRole: async (req, res) => {
     try {
       // Extract the _id parameter from request params
       const { _id } = req.params;
-  console.log(_id)
+  
       // Find the role document by its _id
       const role = await roleSchema.findById(_id);
   
       // Check if role document exists
       if (!role) {
-        // Return 404 status code if role is not found
+        // If role is not found, return 404 status code with an error message
         return res.status(404).json({
-          success: false,
-          message: "Role not found",
+            code: 404,
+            message: "Not Found",
+            description: "Role not found",
+            suggestedAction: "Verify the role ID and try again.",
+         });
+      }
+  
+      // Return role document with 200 status code and success message
+      res.status(200).json({
+          code: 200,
+          message: "OK",
+          description: "Role fetched successfully",
+          data: role,
+       });
+    } catch (error) {
+      // Handle errors
+      console.error("Error in getting role:", error);
+      // Return 500 status code with error message if an error occurs
+      res.status(500).json({
+          code: 500,
+          message: "Internal Server Error",
+          description: "An unexpected error occurred while processing the request",
+          error: error.message,
+          suggestedAction: "Contact the server administrator or try again later.",
+     });
+    }
+  },
+  
+
+  editRole: async (req, res) => {
+    try {
+      // Extract the _id parameter from request params
+      const { _id } = req.params;
+  
+      // Extract the updated role data from the request body
+      const updatedRoleData = req.body;
+  
+      // Find the role document by its _id and update it with the new data
+      const role = await roleSchema.findByIdAndUpdate(_id, updatedRoleData, { new: true });
+  
+      // Check if role document exists
+      if (!role) {
+        // If role is not found, return 404 status code with an error message
+        return res.status(404).send({
+           status:false,
+            message: "Not Found",
+            description: "Role not found",
+            suggestedAction: "Verify the role ID and try again.",
+        });
+      }
+  
+      // Return the updated role document with 200 status code and success message
+      res.status(200).send({
+          status: true,
+          message: "OK",
+          description: "Role updated successfully",
+          data: role,
+      });
+    } catch (error) {
+      // Handle errors
+      console.error("Error in updating role:", error);
+      // Return 500 status code with error message if an error occurs
+      res.status(500).send({
+        status: false,
+          message: "Internal Server Error",
+          description: "An unexpected error occurred while processing the request",
+          error: error.message,
+          suggestedAction: "Contact the server administrator or try again later.",
+     });
+    }
+  },
+  
+  deleteRole: async (req, res) => {
+    try {
+      // Extract the _id parameter from request params
+      const { _id } = req.params;
+  console.log(_id)
+      // Find the role document by its _id and update only the isActive key
+      const role = await roleSchema.findByIdAndUpdate(_id, { isActive: false }, { new: true });
+  
+      // Check if role document exists
+      if (!role) {
+        // If role is not found, return 404 status code with an error message
+        return res.status(404).json({
+          code: 404,
+          message: "Not Found",
+          description: "Role not found",
+          suggestedAction: "Verify the role ID and try again.",
           data: null,
         });
       }
   
-      // Return role document with 200 status code
+      // Return the updated role document with 200 status code and success message
       res.status(200).json({
-        success: true,
-        message: "Role fetched successfully",
+        code: 200,
+        message: "OK",
+        description: "Role successfully marked as inactive",
         data: role,
       });
     } catch (error) {
       // Handle errors
-      console.error("Error in getting role:", error);
+      console.error("Error in deleting role:", error);
+      // Return 500 status code with error message if an error occurs
       res.status(500).json({
-        success: false,
+        code: 500,
         message: "Internal Server Error",
+        description: "An unexpected error occurred while processing the request",
         error: error.message,
+        suggestedAction: "Contact the server administrator or try again later.",
+        data: null,
       });
     }
   },
   
+  
+
 
   getSuperAdminById: async (req, res) => {
     try {
@@ -390,4 +490,94 @@ module.exports = {
       });
     }
   },
+  createUser: async (req, res) => {
+    try {
+      const adminClientData = req.body;
+ 
+      const authorisation = req.header("G.K-Auth_Token");
+
+      const verifyToken = await services.verifyToken(authorisation);
+
+      const { _id } = verifyToken;
+
+      const { username, email, role } = adminClientData;
+  
+      // Check if username already exists
+      const existingAdmin = await userSchema.findOne({ username });
+      if (existingAdmin) {
+        return res.status(400).send({
+          code: 400,
+          message: "Bad Request",
+          description: "The username is already taken.",
+          suggestedAction: "Please choose a different username.",
+          status: false,
+        });
+      }
+     const newUser = new userSchema({
+        userId: _id,
+        username: username,
+        email,
+        role,
+      });
+  
+      const savedUser = await newUser.save();
+  
+      res.status(201).send({
+        code: 201,
+        message: "Created",
+        description:
+          "The request has been fulfilled, and a new resource is created.",
+        suggestedAction:
+          "Review the response body for details of the newly created resource.",
+        status: true,
+        user: savedUser,
+      });
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).send({
+        code: 500,
+        message: "Internal Server Error",
+        description:
+          "The server encountered an unexpected condition that prevented it from fulfilling the request.",
+        suggestedAction: "Contact the server administrator or try again later.",
+      });
+    }
+  },
+
+  getUsers: async (req, res) => {
+    try {
+      const authorization = req.header("G.K-Auth_Token");
+      const verifyToken = await services.verifyToken(authorization);
+      const { _id } = verifyToken;
+      const userRoles = await userSchema.find({ userId: _id });
+      console.log(userRoles,'143');
+      
+      if (!userRoles || userRoles.length === 0) {
+        return res.status(404).send({
+            code: 404,
+            message: "Not Found",
+            description: "Roles not found for this super admin",
+            suggestedAction: "Ensure the super admin ID is correct or create roles for this super admin.",
+            data: null,
+        });
+      }
+  
+      res.status(200).send({
+          code: 200,
+          message: "OK",
+          description: "Roles for super admin fetched successfully",
+          data: userRoles,
+      });
+    } catch (error) {
+      console.error("Error in getting super admin with role:", error);
+      res.status(500).send({
+          code: 500,
+          message: "Internal Server Error",
+          description: "An unexpected error occurred while processing the request",
+          error: error.message,
+          suggestedAction: "Contact the server administrator or try again later.",
+     });
+    }
+  },
+  
 };
