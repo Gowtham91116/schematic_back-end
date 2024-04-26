@@ -74,9 +74,8 @@ require("./src/router/baseRouter")(app);
 
 let user;
 
-const clientid =
-  "1062156057892-oqukd3of5sdc2vmdb0solhomfu3regdm.apps.googleusercontent.com";
-const clientsecret = "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";
+const clientid = process.env.GOOGLE_CLIENT_ID
+const clientsecret = process.env.GOOGLE_CLIENT_SECRET;
 
 passport.use(
   new OAuth2Strategy(
@@ -106,6 +105,7 @@ passport.use(
 
           await user.save();
         }
+console.log(user);
 
         return done(null, user);
       } catch (error) {
@@ -130,13 +130,14 @@ app.use(attachUserData);
 // Route handler for the home page
 app.get("/", async(req, res) => {
   // Check if user data is available in locals
-
+console.log(user);
   if (user) {
 
     const {_id,Super_Admin_id,email,designation} = user;
 
     // If user data is available, send it to the client
     const token =  await services.createToken({_id:_id,Super_Admin_id:Super_Admin_id,email:email,designation:designation});
+    console.log(token);
     res.send({ user,token});
   } else {
     // If user data is not available, send a generic response

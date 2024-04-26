@@ -27,4 +27,10 @@ router.post('/create-user',middleWare.superAdminMiddleWare,controller.createUser
 
 router.get('/get-users',middleWare.superAdminMiddleWare,controller.getUsers);
 
+router.post('/create-expances',middleWare.superAdminMiddleWare,controller.createExpanseSchema);
+
+router.get('/get-expances/:isApproved',middleWare.superAdminMiddleWare,controller.getExpensesData);
+
+
+
 module.exports = router;
