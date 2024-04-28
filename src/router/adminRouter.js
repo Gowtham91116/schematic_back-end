@@ -31,6 +31,9 @@ router.post('/create-expances',middleWare.superAdminMiddleWare,controller.create
 
 router.get('/get-expances/:isApproved',middleWare.superAdminMiddleWare,controller.getExpensesData);
 
+router.get('/get-single-expances/:_id',middleWare.superAdminMiddleWare,controller.getExpancesById);
+
+
 
 
 module.exports = router;

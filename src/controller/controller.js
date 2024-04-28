@@ -545,7 +545,7 @@ const transporter = nodemailer.createTransport({
         from: 'developer.gowtham07@gmail.com',
         to: email,
         subject: "Password verification",
-        text: `${process.env.Base_URL}/${savedUser._id}`,
+        text: `${process.env.Base_URL}`,
       };
   
       transporter.sendMail(mailOptions, (error, info) => {
@@ -645,25 +645,6 @@ const transporter = nodemailer.createTransport({
         isActive,
       } = req.body;
 
-      console.log({
-        ApprovedBy,
-        approvedRole,
-        description,
-        amount,
-        currency,
-        paymentMethod,
-        approvalDate,
-        staffName,
-        approvalStatus,
-        latitude,
-        longitude,
-        category,
-        notes,
-        attachments,
-        isActive,
-        createdBy: _id,
-      });
-
       const count = await expenseSchema.countDocuments();
       // Create a new expense document
       const newExpense = new expenseSchema({
@@ -716,7 +697,6 @@ const transporter = nodemailer.createTransport({
       const verifyToken = await services.verifyToken(authorisation);
       const { _id } = verifyToken;
       const { isApproved } = req.params;
-      console.log(isApproved,692)
       let expensesData;
       if (isApproved === "approved") {
         expensesData = await expenseSchema.find({
@@ -763,4 +743,33 @@ const transporter = nodemailer.createTransport({
         });
     }
   },
+  getExpancesById: async (req, res) => {
+    try {
+      const { _id } = req.params;
+      const get_expense_by_id = await expenseSchema.findById(_id);
+      if (!get_expense_by_id) {
+        return res.status(404).send({
+          code: 404,
+          message: "Not Found",
+          description: "The requested resource was not found.",
+          suggestedAction: "Verify the provided resource ID and try again."
+        });
+      }
+      return res.status(200).send({
+        code: 200,
+        message: "OK",
+        description: "Request successful",
+        data: get_expense_by_id
+      });
+    } catch (error) {
+      return res.status(500).send({
+        code: 500,
+        message: "Internal Server Error",
+        description: "The server encountered an unexpected condition that prevented it from fulfilling the request.",
+        suggestedAction: "Contact the server administrator or try again later."
+      });
+    }
+  }
+  
+
 };

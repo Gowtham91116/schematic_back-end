@@ -162,7 +162,7 @@ app.get(
 app.get(
   "/auth/google/callback",
   passport.authenticate("google", {
-    successRedirect: "http://localhost:5173/super-admin/dashboard",
+    successRedirect: "http://localhost:5173/login-loader/auth_loader",
     failureRedirect: "http://localhost:5173/auth/signin",
   })
 
